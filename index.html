@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒精噴射系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #555;
+        }
+
+        #warning {
+            font-size: 16px;
+            font-weight: bold;
+            color: red;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+    <script>
+        // 定時更新酒精容量
+        function updateCapacity() {
+            fetch('/detect', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('capacity').innerText = data.capacity;
+                    if (data.capacity < 3) {
+                        document.getElementById('warning').innerText = "容量不足！請補充酒精！";
+                    } else {
+                        document.getElementById('warning').innerText = "";
+                    }
+                });
+        }
+
+        // 重置容量
+        function resetCapacity() {
+            fetch('/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('capacity').innerText = data.capacity;
+                    document.getElementById('warning').innerText = "";
+                });
+        }
+
+        setInterval(updateCapacity, 1000); // 每秒更新一次
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>酒精噴射系統</h1>
+        <h2>剩餘容量：<span id="capacity">{{ capacity }}</span> CC</h2>
+        <p id="warning">{{ warning }}</p>
+        <button onclick="resetCapacity()">重置容量</button>
+    </div>
+</body>
+</html>
