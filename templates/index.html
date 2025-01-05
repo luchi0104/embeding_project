@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒精噴射系統</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #555;
+        }
+
+        #warning {
+            font-size: 16px;
+            font-weight: bold;
+            color: red;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+
+        .counter {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        .capacity-bar {
+            width: 300px;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+            position: relative;
+        }
+
+        .capacity-fill {
+            background-color: #007bff;
+            height: 100%;
+            width: 0;
+            transition: width 0.5s ease-in-out, background-color 0.3s;
+        }
+
+        /* 系統狀態樣式 */
+        #systemStatus {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        #systemStatus.active {
+            background-color: #28a745; /* 綠色背景表示啟動 */
+            color: #fff;
+        }
+
+        #systemStatus.inactive {
+            background-color: #dc3545; /* 紅色背景表示關閉 */
+            color: #fff;
+        }
+    </style>
+    <script>
+        const maxCapacity = 5;
+
+        function updateCapacity() {
+            fetch('/detect', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('capacity').innerText = data.capacity;
+                    if (data.capacity < 3) {
+                        document.getElementById('warning').innerText = "容量不足！請補充酒精！";
+                    } else {
+                        document.getElementById('warning').innerText = "";
+                    }
+                    const fillElem = document.getElementById('capacityFill');
+                    let currentCapacity = Math.max(0, Math.min(maxCapacity, data.capacity));
+                    const percentage = (currentCapacity / maxCapacity) * 100;
+                    fillElem.style.width = percentage + '%';
+                    fillElem.style.backgroundColor = currentCapacity === 1 ? "red" : "#007bff";
+                });
+        }
+
+        function resetCapacity() {
+            fetch('/reset', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('capacity').innerText = data.capacity;
+                    document.getElementById('warning').innerText = "";
+                    const fillElem = document.getElementById('capacityFill');
+                    fillElem.style.width = '0%';
+                    fillElem.style.backgroundColor = "#007bff";
+                });
+        }
+
+        function manualInject() {
+            fetch('/inject', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        document.getElementById('capacity').innerText = data.capacity;
+                        const fillElem = document.getElementById('capacityFill');
+                        let currentCapacity = Math.max(0, Math.min(maxCapacity, data.capacity));
+                        const percentage = (currentCapacity / maxCapacity) * 100;
+                        fillElem.style.width = percentage + '%';
+                        fillElem.style.backgroundColor = currentCapacity === 1 ? "red" : "#007bff";
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        }
+
+        function toggleSystem() {
+            fetch('/toggle', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    const systemStatusElem = document.getElementById('systemStatus');
+                    const systemStatus = data.system_active ? "啟動" : "關閉";
+                    systemStatusElem.innerText = `系統狀態：${systemStatus}`;
+                    systemStatusElem.className = data.system_active ? "active" : "inactive";
+                });
+        }
+
+        function updatePageCounter() {
+            let count = localStorage.getItem('pageVisitCount');
+            count = count ? parseInt(count, 10) + 1 : 1;
+            localStorage.setItem('pageVisitCount', count);
+            document.getElementById('pageCounter').innerText = count;
+        }
+
+        window.onload = function() {
+            updatePageCounter();
+            updateCapacity();
+        };
+
+        setInterval(updateCapacity, 2000);
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>酒精噴射系統</h1>
+        <h2>剩餘容量：<span id="capacity">{{ capacity }}</span> CC</h2>
+        <p id="warning">{{ warning }}</p>
+        <p id="systemStatus" class="inactive">系統狀態：關閉</p>
+        <div class="capacity-bar">
+            <div class="capacity-fill" id="capacityFill"></div>
+        </div>
+        <button onclick="toggleSystem()">開關</button>
+        <button onclick="resetCapacity()">重置容量</button>
+        <button onclick="manualInject()">主動噴射</button>
+        <p class="counter">本頁面已被載入 <span id="pageCounter">0</span> 次</p>
+    </div>
+</body>
+</html>
